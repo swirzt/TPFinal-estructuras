@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "slist.h"
 
 typedef struct {
   char ciudad;
@@ -7,9 +8,6 @@ typedef struct {
   char* ciudadesVisit;
   int* costo;
 } Ciudad;
-
-int size_char(char* array) { return sizeof(array) / sizeof(char); }
-int size_int(int* array) { return sizeof(array) / sizeof(int); }
 
 Ciudad* crea_ciudad(char ciudad) {
   Ciudad* city = malloc(sizeof(Ciudad));
@@ -51,10 +49,56 @@ int revisa_conexion(Ciudad* city, char ciudad) {
   return 1;
 }
 
+Ciudad* buscar_ciudad(SList ciudades, char ciudad) {
+  int termine = 0;
+  while (!termine) {
+    Ciudad* city = ciudades->dato;
+    if (city->ciudad == ciudad)
+      termine = 1;
+    else
+      ciudades = ciudades->sig;
+  }
+  return ciudades->dato;
+}
 
+SList lectura_archivo(char* archivoEntrada) {
+  SList ciudades = slist_crear();
+  FILE* archivo = fopen(archivoEntrada, "r");
+  char basura[100];
+  fscanf(archivo, "%s\n", basura);  // Elimino la linea de "Ciudades"
+  char bufferc = fgetc(archivo);
+  while (bufferc != '\n') {
+    if (bufferc != ',' && bufferc != ' ')
+      ciudades = slist_agregar_final(ciudades, crea_ciudad(bufferc));
+    bufferc = fgetc(archivo);
+  }
+  // char primero, segundo;
+  // int precio;
+  // fscanf(archivo, "%c,%c,%d", &primero, &segundo, &precio);
+  // printf("%c %c %d\n", primero, segundo, precio);
+  // fscanf(archivo, "%s\n", basura);  // Elimino la linea de "Costos"
+  // bufferc = fgetc(archivo);
+  // while (bufferc != EOF) {
+  //   primero = bufferc;
+  //   while (bufferc == ' ' || bufferc == ',') bufferc = fgetc(archivo);
+  //   segundo = bufferc;
+  //   // while (bufferc == ' ' || bufferc == ',') bufferc = fgetc(archivo);
+  //   fscanf(archivo, "%d", &precio);
+
+  //   ciudad_agregar_conexion(buscar_ciudad(ciudades, primero), segundo,
+  //   precio); ciudad_agregar_conexion(buscar_ciudad(ciudades, segundo),
+  //   primero, precio);
+
+  //   bufferc = fgetc(archivo);
+  // }
+
+  fclose(archivo);
+  return ciudades;
+}
 
 int main() {
-  Ciudad* citytest = crea_ciudad('a');
-  ciudad_agregar_conexion(citytest, 'b', 5);
+  SList resultado = lectura_archivo("ejemplo.txt");
+  slist_destruir(resultado, destruye_ciudad);
+
   return 1;
 }
