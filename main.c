@@ -9,6 +9,8 @@ typedef struct _Ciudades {
   int* matrizCostos;  // Es una matriz en un arreglo unidimensional
 } * Ciudades;
 
+#define SIZEBUFFER 256
+
 void matriz_escribir(int* matriz, int n, int fila, int columna, int valor) {
   int indice = (fila * n) + columna;
   matriz[indice] = valor;
@@ -62,8 +64,6 @@ char* copia_palabra(char* palabra) {
   return word;
 }
 
-#define SIZEBUFFER 256
-
 Ciudades lectura_archivo(char* archivoEntrada, Cola nombresCiudades) {
   FILE* archivo = fopen(archivoEntrada, "r");
   char* buffer = malloc(sizeof(char) * SIZEBUFFER);
@@ -88,26 +88,28 @@ Ciudades lectura_archivo(char* archivoEntrada, Cola nombresCiudades) {
   }
   cola_destruir(nombresCiudades);
 
-  // while (fscanf(archivo, "%s", buffer) != EOF) {
-  //   char* iteraBuffer = buffer;
-  //   int i = 0, largo = strlen(buffer);
-  //   while (iteraBuffer[i] != ',') i++;
-  //   char* ciudad1 = malloc(sizeof(char) * i);
-  //   strncpy(ciudad1, iteraBuffer, i);
-  //   ciudad1[i] = '\0';
-  //   iteraBuffer = iteraBuffer + i + 1;
-  //   i = 0;
-  //   while (iteraBuffer[i] != ',') i++;
-  //   char* ciudad2 = malloc(sizeof(char) * i);
-  //   strncpy(ciudad2, iteraBuffer, i);
-  //   ciudad2[i] = '\0';
-  //   iteraBuffer = iteraBuffer + i + 1;
-  //   i = 0;
-  //   int costo = atoi(iteraBuffer);
-  //   ciudades_agregar_costo(c, ciudad1, ciudad2, costo);
-  //   free(ciudad1);
-  //   free(ciudad2);
-  // }
+  while (fscanf(archivo, "%s", buffer) != EOF) {
+    char* iteraBuffer = buffer;
+    int i = 0, largo = strlen(buffer);
+    while (iteraBuffer[i] != ',') i++;
+    i++;  // Al salir del while i representa el indice de ','
+    char* ciudad1 = malloc(sizeof(char) * i);
+    strncpy(ciudad1, iteraBuffer, i - 1);  // Evito copiar ','
+    ciudad1[i - 1] = '\0';                 // Coloco '\0' al final
+    iteraBuffer = iteraBuffer + i;
+    i = 0;
+    while (iteraBuffer[i] != ',') i++;
+    i++;  // Al salir del while i representa el indice de ','
+    char* ciudad2 = malloc(sizeof(char) * i);
+    strncpy(ciudad2, iteraBuffer, i - 1);  // Evito copiar ','
+    ciudad2[i - 1] = '\0';                 // Coloco '\0' al final
+    iteraBuffer = iteraBuffer + i;
+    i = 0;
+    int costo = atoi(iteraBuffer);
+    ciudades_agregar_costo(c, ciudad1, ciudad2, costo);
+    free(ciudad1);
+    free(ciudad2);
+  }
   free(buffer);
   fclose(archivo);
   return c;

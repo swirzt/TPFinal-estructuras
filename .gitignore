@@ -1,5 +1,5 @@
 ejemplo.txt
 main
-slist.o
 *.bin
 *.ipch
+*.o
