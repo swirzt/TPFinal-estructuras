@@ -14,14 +14,13 @@ int cola_es_vacia(Cola cola) {
   return cola->primero == NULL;
 }
 
-SNodo* cola_primero(Cola cola) {
+char* cola_primero(Cola cola) {
   assert(!cola_es_vacia(cola));
-  return cola->primero;
+  return cola->primero->dato;
 }
 
-void cola_encolar(Cola cola, int pos, char* dato) {
+void cola_encolar(Cola cola, char* dato) {
   SNodo* nuevoNodo = malloc(sizeof(SNodo));
-  nuevoNodo->n = pos;
   nuevoNodo->dato = dato;
   nuevoNodo->sig = NULL;
   if (cola_es_vacia(cola)) {
@@ -44,7 +43,6 @@ void cola_desencolar(Cola cola) {
 void cola_destruir(Cola cola) {
   for (SNodo* buffer = cola->primero; buffer != NULL;) {
     SNodo* tmp = buffer->sig;
-    free(buffer->dato);
     free(buffer);
     buffer = tmp;
   }

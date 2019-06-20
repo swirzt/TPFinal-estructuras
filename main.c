@@ -3,26 +3,57 @@
 #include <string.h>
 #include "colasenlazadas.h"
 
-typedef struct {
-  int conexiones;
-  int* nCiudad;
-  int* precio;
-} Ciudad;
+typedef struct _Ciudades {
+  int cantidad;
+  char** nombres;
+  int* matrizCostos;  // Es una matriz en un arreglo unidimensional
+} * Ciudades;
 
-Ciudad* crea_ciudad(int size) {
-  Ciudad* city = malloc(sizeof(Ciudad));
-  city->conexiones = 0;
-  size--;  // Como maximo puede conectarse a todas las ciudades menos si misma.
-  city->nCiudad = malloc(sizeof(int) * size);
-  city->precio = malloc(sizeof(int) * size);
-  return city;
+void matriz_escribir(int* matriz, int n, int fila, int columna, int valor) {
+  int indice = (fila * n) + columna;
+  matriz[indice] = valor;
 }
 
-void destruye_ciudad(void* dato) {
-  Ciudad* city = dato;
-  free(city->nCiudad);
-  free(city->precio);
-  free(city);
+Ciudades crea_ciudades(int cantidad) {
+  Ciudades nuevaCiudades = malloc(sizeof(struct _Ciudades));
+  nuevaCiudades->cantidad = cantidad;
+  nuevaCiudades->nombres = malloc(sizeof(char*) * cantidad);
+  nuevaCiudades->matrizCostos = malloc(sizeof(int) * cantidad * cantidad);
+  for (int i = 0; i < cantidad; i++)
+    for (int j = 0; j < cantidad; j++)
+      matriz_escribir(nuevaCiudades->matrizCostos, cantidad, i, j, -1);
+  // Se inicializa la matriz de costos con -1
+  return nuevaCiudades;
+}
+
+void ciudades_destruir(Ciudades c) {
+  for (int i = 0; i < c->cantidad; i++) free(c->nombres[i]);
+  free(c->nombres);
+  free(c->matrizCostos);
+  free(c);
+}
+
+void ciudades_agregar_nombre(Ciudades c, int pos, char* nombre) {
+  c->nombres[pos] = nombre;
+}
+
+int ciudades_obtiene_pos(Ciudades c, char* nombre) {
+  int termine = 0, i;
+  int max = c->cantidad;
+  for (i = 0; i < max && !termine; i++) {
+    if (!strcmp(nombre, c->nombres[i])) termine = 1;
+  }
+  if (termine)
+    return --i;
+  else
+    return -1;
+}
+
+void ciudades_agregar_costo(Ciudades c, char* city1, char* city2, int costo) {
+  int indice1 = ciudades_obtiene_pos(c, city1);
+  int indice2 = ciudades_obtiene_pos(c, city2);
+  matriz_escribir(c->matrizCostos, c->cantidad, indice1, indice2, costo);
+  matriz_escribir(c->matrizCostos, c->cantidad, indice2, indice1, costo);
 }
 
 char* copia_palabra(char* palabra) {
@@ -31,50 +62,9 @@ char* copia_palabra(char* palabra) {
   return word;
 }
 
-void ciudad_agregar_conexion(Ciudad* city, int ciudad, int precio) {
-  int max = city->conexiones, i, termine = 0;
-  for (i = 0; i < max && !termine; i++) {
-    if (city->precio[i] > precio) termine = 1;
-  }
-  if (termine)
-    i--;  // Para invertir el i++ del final del for, solo si corte el for
-  for (int j = max; j > i; j--) {
-    city->nCiudad[j] = city->nCiudad[j - 1];
-    city->precio[j] = city->precio[j - 1];
-  }
-  city->nCiudad[i] = ciudad;
-  city->precio[i] = precio;
-}
-
-// int revisa_conexion(Ciudad* city, char ciudad) {
-//   int max = city->conexiones;
-//   for (int i = 0; i < max; i++)
-//     if (city->ciudadesVisit[i] == ciudad) return 0;
-//   return 1;
-// }
-
-// Ciudad* buscar_ciudad(SList ciudades, char ciudad) {
-//   int termine = 0;
-//   while (!termine) {
-//     Ciudad* city = ciudades->dato;
-//     if (city->ciudad == ciudad)
-//       termine = 1;
-//     else
-//       ciudades = ciudades->sig;
-//   }
-//   return ciudades->dato;
-// }
-
 #define SIZEBUFFER 256
 
-int recupera_pos(Cola nombresCiudades, char* ciudad) {
-  SNodo* nodoActual = cola_primero(nombresCiudades);
-  while (strcmp(nodoActual->dato, ciudad)) nodoActual = nodoActual->sig;
-  return nodoActual->n;
-  // Nunca evaluo el NULL ya que se que la palabra existe en algun nodo;
-}
-
-Ciudad** lectura_archivo(char* archivoEntrada, Cola nombresCiudades) {
+Ciudades lectura_archivo(char* archivoEntrada, Cola nombresCiudades) {
   FILE* archivo = fopen(archivoEntrada, "r");
   char* buffer = malloc(sizeof(char) * SIZEBUFFER);
   int cantidadPalabras = 0;
@@ -84,50 +74,48 @@ Ciudad** lectura_archivo(char* archivoEntrada, Cola nombresCiudades) {
     int largobuffer = strlen(buffer);
     if (largobuffer != 0) {
       if (buffer[largobuffer - 1] == ',') buffer[largobuffer - 1] = '\0';
-      cola_encolar(nombresCiudades, cantidadPalabras, copia_palabra(buffer));
+      cola_encolar(nombresCiudades, copia_palabra(buffer));
       cantidadPalabras++;
     }
     fscanf(archivo, "%s", buffer);
   }
 
-  Ciudad** ciudades = malloc(sizeof(Ciudad*) * cantidadPalabras);
-  for (int i = 0; i < cantidadPalabras; i++)
-    ciudades[i] = crea_ciudad(cantidadPalabras);
-
-  while (fscanf(archivo, "%s", buffer) != EOF) {
-    char* iteraBuffer = buffer;
-    int i = 0, largo = strlen(buffer);
-    while (iteraBuffer[i] != ',') i++;
-    char* ciudad1 = malloc(sizeof(char) * i);
-    strncpy(ciudad1, iteraBuffer, i);
-    ciudad1[i] = '\0';
-    iteraBuffer = iteraBuffer + i + 1;
-    i = 0;
-    while (iteraBuffer[i] != ',') i++;
-    char* ciudad2 = malloc(sizeof(char) * i);
-    strncpy(ciudad2, iteraBuffer, i);
-    ciudad2[i] = '\0';
-    iteraBuffer = iteraBuffer + i + 1;
-    i = 0;
-    int costo = atoi(iteraBuffer);
-    int indice1, indice2;
-    indice1 = recupera_pos(nombresCiudades, ciudad1);
-    indice2 = recupera_pos(nombresCiudades, ciudad2);
-    ciudad_agregar_conexion(ciudades[indice1], indice2, costo);
-    ciudad_agregar_conexion(ciudades[indice2], indice1, costo);
-    free(ciudad1);
-    free(ciudad2);
+  Ciudades c = crea_ciudades(cantidadPalabras);
+  for (int i = 0; !cola_es_vacia(nombresCiudades); i++) {
+    char* nombre = cola_primero(nombresCiudades);
+    cola_desencolar(nombresCiudades);
+    ciudades_agregar_nombre(c, i, nombre);
   }
+  cola_destruir(nombresCiudades);
+
+  // while (fscanf(archivo, "%s", buffer) != EOF) {
+  //   char* iteraBuffer = buffer;
+  //   int i = 0, largo = strlen(buffer);
+  //   while (iteraBuffer[i] != ',') i++;
+  //   char* ciudad1 = malloc(sizeof(char) * i);
+  //   strncpy(ciudad1, iteraBuffer, i);
+  //   ciudad1[i] = '\0';
+  //   iteraBuffer = iteraBuffer + i + 1;
+  //   i = 0;
+  //   while (iteraBuffer[i] != ',') i++;
+  //   char* ciudad2 = malloc(sizeof(char) * i);
+  //   strncpy(ciudad2, iteraBuffer, i);
+  //   ciudad2[i] = '\0';
+  //   iteraBuffer = iteraBuffer + i + 1;
+  //   i = 0;
+  //   int costo = atoi(iteraBuffer);
+  //   ciudades_agregar_costo(c, ciudad1, ciudad2, costo);
+  //   free(ciudad1);
+  //   free(ciudad2);
+  // }
   free(buffer);
   fclose(archivo);
-  return ciudades;
+  return c;
 }
 
 int main() {
   Cola test = cola_crear();
-  Ciudad** ciudades = lectura_archivo("ejemplo.txt", test);
-  // free(ciudades);
-  // cola_encolar(test, 2, "meme");
-  // printf("HOLACOLA %d\n", cola_es_vacia(test));
+  Ciudades c = lectura_archivo("ejemplo.txt", test);
+  ciudades_destruir(c);
   return 1;
 }

@@ -4,7 +4,6 @@
 #include <stddef.h>
 
 typedef struct _SNodo {
-  int n;
   char* dato;
   struct _SNodo* sig;
 } SNodo;
@@ -18,9 +17,9 @@ Cola cola_crear();
 
 int cola_es_vacia(Cola cola);
 
-SNodo* cola_primero(Cola cola);
+char* cola_primero(Cola cola);
 
-void cola_encolar(Cola cola, int pos, char* dato);
+void cola_encolar(Cola cola, char* dato);
 
 void cola_desencolar(Cola cola);
 
