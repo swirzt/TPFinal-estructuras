@@ -37,7 +37,7 @@ void ciudad_agregar_conexion(Ciudad* city, int ciudad, int precio) {
     if (city->precio[i] > precio) termine = 1;
   }
   if (termine)
-    i--;  // Para invertir el i++ del final del for, solo si no termine el for
+    i--;  // Para invertir el i++ del final del for, solo si corte el for
   for (int j = max; j > i; j--) {
     city->nCiudad[j] = city->nCiudad[j - 1];
     city->precio[j] = city->precio[j - 1];
@@ -79,65 +79,54 @@ Ciudad** lectura_archivo(char* archivoEntrada, Cola nombresCiudades) {
   char* buffer = malloc(sizeof(char) * SIZEBUFFER);
   int cantidadPalabras = 0;
   fscanf(archivo, "%s", buffer);  // Saltea la linea de "Ciudades"
-  char bufferc = fgetc(archivo);  // LLega al primer \n
-  bufferc = fgetc(archivo);       // Comienza la nueva linea.
-  while (bufferc != '\n') {
-    int i = 0;
-    while (i < SIZEBUFFER && bufferc != '\n' && bufferc != ',') {
-      buffer[i] = bufferc;
-      bufferc = fgetc(archivo);
-      i++;
-    }
-    buffer[i] = '\0';
-
-    if (i != 0) {
+  fscanf(archivo, "%s", buffer);  // Comienzo a leer ciudades
+  while (strcmp(buffer, "Costos")) {
+    int largobuffer = strlen(buffer);
+    if (largobuffer != 0) {
+      if (buffer[largobuffer - 1] == ',') buffer[largobuffer - 1] = '\0';
       cola_encolar(nombresCiudades, cantidadPalabras, copia_palabra(buffer));
       cantidadPalabras++;
     }
-    while (bufferc == ' ' || bufferc == ',') bufferc = fgetc(archivo);
+    fscanf(archivo, "%s", buffer);
   }
 
   Ciudad** ciudades = malloc(sizeof(Ciudad*) * cantidadPalabras);
   for (int i = 0; i < cantidadPalabras; i++)
     ciudades[i] = crea_ciudad(cantidadPalabras);
 
-  // hasta aca funciona
-
-  fscanf(archivo, "%s", buffer);  // Saltea la linea de "Costos"
-  bufferc = fgetc(archivo);       // Alcanza el /n
-  bufferc = fgetc(archivo);       // Comienza la nueva linea
-  while (bufferc != EOF) {
-    int i = 0, valorEnLinea = 1;
-    int ciudad1, ciudad2, costo;
-    while (bufferc != '\n' && bufferc != EOF) {
-      if (bufferc != ',')
-        buffer[i] = bufferc;
-      else {
-        buffer[i] = '\0';
-        if (valorEnLinea == 1)
-          ciudad1 = recupera_pos(nombresCiudades, buffer);
-        else if (valorEnLinea == 2)
-          ciudad2 = recupera_pos(nombresCiudades, buffer);
-        else
-          costo = atoi(buffer);
-        i = 0;
-      }
-      i++;
-      bufferc = fgetc(archivo);
-    }
-    ciudad_agregar_conexion(ciudades[ciudad1], ciudad2, costo);
-    ciudad_agregar_conexion(ciudades[ciudad2], ciudad1, costo);
-    while (bufferc == '\n') bufferc = fgetc(archivo);
+  while (fscanf(archivo, "%s", buffer) != EOF) {
+    char* iteraBuffer = buffer;
+    int i = 0, largo = strlen(buffer);
+    while (iteraBuffer[i] != ',') i++;
+    char* ciudad1 = malloc(sizeof(char) * i);
+    strncpy(ciudad1, iteraBuffer, i);
+    ciudad1[i] = '\0';
+    iteraBuffer = iteraBuffer + i + 1;
+    i = 0;
+    while (iteraBuffer[i] != ',') i++;
+    char* ciudad2 = malloc(sizeof(char) * i);
+    strncpy(ciudad2, iteraBuffer, i);
+    ciudad2[i] = '\0';
+    iteraBuffer = iteraBuffer + i + 1;
+    i = 0;
+    int costo = atoi(iteraBuffer);
+    int indice1, indice2;
+    indice1 = recupera_pos(nombresCiudades, ciudad1);
+    indice2 = recupera_pos(nombresCiudades, ciudad2);
+    ciudad_agregar_conexion(ciudades[indice1], indice2, costo);
+    ciudad_agregar_conexion(ciudades[indice2], indice1, costo);
+    free(ciudad1);
+    free(ciudad2);
   }
-
-  fclose(archivo);
   free(buffer);
+  fclose(archivo);
   return ciudades;
 }
 
 int main() {
   Cola test = cola_crear();
   Ciudad** ciudades = lectura_archivo("ejemplo.txt", test);
+  // free(ciudades);
   // cola_encolar(test, 2, "meme");
   // printf("HOLACOLA %d\n", cola_es_vacia(test));
   return 1;
