@@ -1,4 +1,4 @@
-ejemplo.txt
+*.txt
 main
 *.bin
 *.ipch
