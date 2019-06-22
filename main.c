@@ -278,7 +278,7 @@ void imprime_salida(char* archivoSalida, Ciudades c, Solucion resultado) {
 }
 
 /*
- *
+ * travelling_salesman_problem : Ciudades -> Solucion
  */
 Solucion travelling_salesman_problem(Ciudades c) {
   Solucion resultado = crea_solucion(c->cantidad);
