@@ -186,14 +186,15 @@ Ciudades lectura_archivo(char* archivoEntrada) {
   }
   cola_destruir(nombresCiudades);
 
-  fgetc(archivo);  // Saltea el \r
-  fgetc(archivo);  // Saltea el \n
+  char bufferc;
+  bufferc = fgetc(archivo);                       // Saltea el \r
+  if (bufferc == '\r') bufferc = fgetc(archivo);  // Saltea el \n
   char* buffer2 = malloc(sizeof(char) * SIZEBUFFER);
   int costo;
   while (fscanf(archivo, "%[^,],%[^,],%d", buffer, buffer2, &costo) == 3) {
     ciudades_agregar_costo(c, buffer, buffer2, costo);
-    fgetc(archivo);  // Saltea el \r
-    fgetc(archivo);  // Saltea el \n
+    bufferc = fgetc(archivo);                       // Saltea el \r
+    if (bufferc == '\r') bufferc = fgetc(archivo);  // Saltea el \n
   }
 
   free(buffer);
@@ -297,11 +298,14 @@ int main(int argc, char* argv[]) {
   if (c->cantidad == -1) return 0;
   if (c->cantidad < 3) {
     printf("La cantidad de ciudades obtenida es menor a 3.\n");
+    ciudades_destruir(c);
     return 0;
   }
   Solucion s = travelling_salesman_problem(c);
   if (s->costo == -1) {
     printf("No se encontro una solucion con los datos dados.\n");
+    ciudades_destruir(c);
+    solucion_destruir(s);
     return 0;
   }
   imprime_salida(argv[2], c, s);
