@@ -92,6 +92,8 @@ int ciudades_obtiene_pos(Ciudades c, char* nombre) {
     return --i;
   else
     return -1;
+  // Esto esta dado como un seguro pero si el archivo esta bien escrito no
+  // deberia darse esta situación.
 }
 
 /*
@@ -123,8 +125,9 @@ int ciudades_devuelve_costo(Ciudades c, int c1, int c2) {
 }
 
 /*
- * crea_solucion : INt -> Solucion
- * Recibe un tamaño, devuelve una estructura Solucion para ese tamaño.
+ * crea_solucion : Int -> Solucion
+ * Recibe un tamaño, devuelve una estructura Solucion con memoria alocada para
+ * ese tamaño.
  */
 Solucion crea_solucion(int size) {
   Solucion s = malloc(sizeof(struct _Solucion));
@@ -163,6 +166,7 @@ Ciudades lectura_archivo(char* archivoEntrada) {
     printf("El archivo \"%s\" no existe, revise su entrada.\n", archivoEntrada);
     return crea_ciudades(-1);
   }
+
   Cola nombresCiudades = cola_crear();
   char* buffer = malloc(sizeof(char) * SIZEBUFFER);
   int cantidadPalabras = 0;
@@ -187,14 +191,16 @@ Ciudades lectura_archivo(char* archivoEntrada) {
   cola_destruir(nombresCiudades);
 
   char bufferc;
-  bufferc = fgetc(archivo);                       // Saltea el \r
-  if (bufferc == '\r') bufferc = fgetc(archivo);  // Saltea el \n
+  bufferc = fgetc(archivo);  // Saltea un caracter de fin de linea
+  // Si el caracter anterior es \r vuelve a saltear
+  if (bufferc == '\r') fgetc(archivo);
   char* buffer2 = malloc(sizeof(char) * SIZEBUFFER);
   int costo;
   while (fscanf(archivo, "%[^,],%[^,],%d", buffer, buffer2, &costo) == 3) {
     ciudades_agregar_costo(c, buffer, buffer2, costo);
-    bufferc = fgetc(archivo);                       // Saltea el \r
-    if (bufferc == '\r') bufferc = fgetc(archivo);  // Saltea el \n
+    bufferc = fgetc(archivo);  // Saltea un caracter de fin de linea
+    // Si el caracter anterior es \r vuelve a saltear
+    if (bufferc == '\r') fgetc(archivo);
   }
 
   free(buffer);
@@ -259,12 +265,29 @@ void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
 }
 
 /*
+ * travelling_salesman_problem : Ciudades -> Solucion
+ * Inicializa los argumentos necesarios para llamar a la función recursiva.
+ * Devuelve la solucion de la recursión.
+ */
+Solucion travelling_salesman_problem(Ciudades c) {
+  Solucion resultado = crea_solucion(c->cantidad);
+  Solucion trabajo = crea_solucion(c->cantidad);
+  brute_force(c, resultado, trabajo, 0);
+  solucion_destruir(trabajo);
+  return resultado;
+}
+
+/*
  * imprime_salida : Char* Ciudades Solucion -> Void
  * Recibe Una estructura Ciudades, una Solucion y el archivo de salida.
  * Imprime la Solucion en el archivo.
  */
 void imprime_salida(char* archivoSalida, Ciudades c, Solucion resultado) {
   FILE* archivo = fopen(archivoSalida, "w");
+  if (archivo == NULL) {
+    printf("No se pudo crear el archivo \"%s\"", archivoSalida);
+    printf(" la solución no se almacenó\n");
+  }
   int cantidadCiudades = c->cantidad;
   for (int i = 0; i < cantidadCiudades; i++) {
     int indice1 = resultado->movimientos[i % cantidadCiudades];
@@ -278,36 +301,35 @@ void imprime_salida(char* archivoSalida, Ciudades c, Solucion resultado) {
   fclose(archivo);
 }
 
-/*
- * travelling_salesman_problem : Ciudades -> Solucion
- */
-Solucion travelling_salesman_problem(Ciudades c) {
-  Solucion resultado = crea_solucion(c->cantidad);
-  Solucion trabajo = crea_solucion(c->cantidad);
-  brute_force(c, resultado, trabajo, 0);
-  solucion_destruir(trabajo);
-  return resultado;
-}
-
 int main(int argc, char* argv[]) {
   if (argc != 3) {
     printf("La cantidad de argumentos es incorrecta.\n");
     return 0;
   }
+
   Ciudades c = lectura_archivo(argv[1]);
-  if (c->cantidad == -1) return 0;
-  if (c->cantidad < 3) {
+
+  if (c->cantidad == -1) {  // Significa que el archivo no existe en la lectura.
+    ciudades_destruir(c);
+    return 0;
+  }
+
+  // Si se desea resolver TSP de 3, debe comentarse este if.
+  if (c->cantidad < 3) {  // Cantidad menor a 3 implica un problema trivial.
     printf("La cantidad de ciudades obtenida es menor a 3.\n");
     ciudades_destruir(c);
     return 0;
   }
+
   Solucion s = travelling_salesman_problem(c);
+
   if (s->costo == -1) {
     printf("No se encontro una solucion con los datos dados.\n");
     ciudades_destruir(c);
     solucion_destruir(s);
     return 0;
   }
+
   imprime_salida(argv[2], c, s);
   ciudades_destruir(c);
   solucion_destruir(s);

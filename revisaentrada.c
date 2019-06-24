@@ -65,9 +65,10 @@ int main(int argc, char* argv[]) {
     llama_error(0, 1);  // La linea no es necesaria en este caso
     return 0;
   }
-  char bufferc = fgetc(archivo);  // Saltea el \r
-  bufferc = fgetc(archivo);       // Saltea el \n
-  bufferc = fgetc(archivo);       // Comienza la nueva linea
+  char bufferc = fgetc(archivo);  // Quita el fin de linea
+  // Si el caracter anterior es \r vuelva a quitar un caracter
+  if (bufferc == '\r') fgetc(archivo);
+  bufferc = fgetc(archivo);  // Comienza la nueva linea
   int i = 0, estado = 1, linea = 2;
   SList ciudades = slist_crear();
   while (bufferc != '\r' && bufferc != '\n') {
@@ -118,6 +119,11 @@ int main(int argc, char* argv[]) {
     llama_error(5, linea);
     return 0;
   }
+
+  bufferc = fgetc(archivo);  // Quita el fin de linea
+  // Si el caracter anterior es \r vuelva a quitar un caracter
+  if (bufferc == '\r') fgetc(archivo);
+  
 
   slist_destruir(ciudades);
   fclose(archivo);
