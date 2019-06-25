@@ -18,5 +18,5 @@ check: slist.o revisaentrada.c
 clean:
 	rm -rf colasenlazadas.o
 	rm -rf main
-	wm -rf slist.o
+	rm -rf slist.o
 	rm -rf check

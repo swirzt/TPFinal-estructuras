@@ -3,19 +3,19 @@
 
 SList slist_crear() { return NULL; }
 
-void slist_destruir(SList lista) {
+void slist_destruir(SList lista, FuncionDestruir f) {
   SNodo *nodoAEliminar;
   while (lista != NULL) {
     nodoAEliminar = lista;
     lista = lista->sig;
-    free(nodoAEliminar->dato);
+    f(nodoAEliminar->dato);
     free(nodoAEliminar);
   }
 }
 
 int slist_vacia(SList lista) { return lista == NULL; }
 
-SList slist_agregar_final(SList lista, char *dato) {
+SList slist_agregar_final(SList lista, void *dato) {
   SNodo *nuevoNodo = malloc(sizeof(SNodo));
   nuevoNodo->dato = dato;
   nuevoNodo->sig = NULL;
@@ -31,7 +31,7 @@ SList slist_agregar_final(SList lista, char *dato) {
   return lista;
 }
 
-SList slist_agregar_inicio(SList lista, char *dato) {
+SList slist_agregar_inicio(SList lista, void *dato) {
   SNodo *nuevoNodo = malloc(sizeof(SNodo));
   nuevoNodo->dato = dato;
   nuevoNodo->sig = lista;
