@@ -78,9 +78,6 @@ void imprime_errores(SList errores) {
     Error e = errores->dato;
     printf("%d ", e->tipo);
     switch (e->tipo) {
-      default:
-        printf("Nada\n");
-        break;
       case -1:
         printf("El archico no posee toda la informacion necesaria.\n");
         break;
@@ -169,8 +166,13 @@ void falta_conexion(SList ciudades) {
   }
 }
 
+void revisa_linea_ciudades(FILE* archivo) {}
+
 int main(int argc, char* argv[]) {
-  if (argc != 2) return 0;
+  if (argc != 2) {
+    printf("La cantidad de argumentos es incorrecta.\n");
+    return 0;
+  }
   FILE* archivo = fopen(argv[1], "r");
   if (archivo == NULL) {
     printf("El archivo \"%s\" no existe.\n", argv[1]);
@@ -368,10 +370,8 @@ int main(int argc, char* argv[]) {
       anteriorComa = 0;
     }
   }
-
-  falta_conexion(ciudades);
-
   imprime_errores(errores);
+  falta_conexion(ciudades);
   slist_destruir(errores, destruye_error);
   slist_destruir(ciudades, destruye_ciudad);
   fclose(archivo);
