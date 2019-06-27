@@ -16,28 +16,6 @@ typedef struct _Solucion {
 
 #define SIZEBUFFER 256
 
-#define SUMATORIA(n) (n * (n + 1) / 2)
-
-/*
- * matriz_escribir : Int* Int Int Int -> Void
- * Recibe una matriz NxN triangular inferior, representada en un arreglo de int.
- * Modifica el valor de la matriz en la posicion (fila,columna).
- */
-void matriz_escribir(int* matriz, int fila, int columna, int valor) {
-  int indice = SUMATORIA(fila) + columna;
-  matriz[indice] = valor;
-}
-
-/*
- * matriz_obtener : Int* Int Int -> Int
- * Recibe una matriz NxN triangular inferior, representada en un arreglo de int.
- * Devuelve el valor de la matriz en la posicion (fila,columna).
- */
-int matriz_obtener(int* matriz, int fila, int columna) {
-  int indice = SUMATORIA(fila) + columna;
-  return matriz[indice];
-}
-
 /*
  * crea_ciudades : Int -> Ciudades
  * Recibe un tamaño, devuelve una estructura Ciudades con la memoria alocada
@@ -48,11 +26,8 @@ Ciudades crea_ciudades(int cantidad) {
   nuevaCiudades->cantidad = cantidad;
   if (cantidad >= 0) {
     nuevaCiudades->nombres = malloc(sizeof(char*) * cantidad);
-    nuevaCiudades->matrizCostos = malloc(sizeof(int) * SUMATORIA(cantidad));
-    for (int i = 0; i < cantidad; i++)
-      for (int j = 0; j <= i; j++)
-        matriz_escribir(nuevaCiudades->matrizCostos, i, j, -1);
-    // Se inicializa la matriz de costos con -1
+    nuevaCiudades->matrizCostos = calloc(cantidad * cantidad, sizeof(int));
+    // La funcion calloc inicializa la matriz con valor 0
   }
   return nuevaCiudades;
 }
@@ -104,11 +79,8 @@ int ciudades_obtiene_pos(Ciudades c, char* nombre) {
 void ciudades_agregar_costo(Ciudades c, char* city1, char* city2, int costo) {
   int indice1 = ciudades_obtiene_pos(c, city1);
   int indice2 = ciudades_obtiene_pos(c, city2);
-  int accion = (indice1 <= indice2 ? 1 : 2);
-  if (accion == 1)
-    matriz_escribir(c->matrizCostos, indice2, indice1, costo);
-  else
-    matriz_escribir(c->matrizCostos, indice1, indice2, costo);
+  c->matrizCostos[indice1 * c->cantidad + indice2] = costo;
+  c->matrizCostos[indice2 * c->cantidad + indice1] = costo;
 }
 
 /*
@@ -117,11 +89,7 @@ void ciudades_agregar_costo(Ciudades c, char* city1, char* city2, int costo) {
  * Devuelve el costo de viaje entre ellas.
  */
 int ciudades_devuelve_costo(Ciudades c, int c1, int c2) {
-  int accion = (c1 <= c2 ? 1 : 2);
-  if (accion == 1)
-    return matriz_obtener(c->matrizCostos, c2, c1);
-  else
-    return matriz_obtener(c->matrizCostos, c1, c2);
+  return c->matrizCostos[c1 * c->cantidad + c2];
 }
 
 /*
@@ -214,7 +182,7 @@ Ciudades lectura_archivo(char* archivoEntrada) {
  * Recibe un array, su tamaño y un dato.
  * Devuelve 1 si el dato esta en el array, de lo contrario 0.
  */
-int in_array(int* array, int size, int dato) {
+int in_array(int* array, int size, int dato) {  // SACAR
   for (int i = 0; i < size; i++)
     if (dato == array[i]) return 1;
   return 0;
@@ -236,24 +204,23 @@ void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
     actual->costo = 0;
     brute_force(c, mejor, actual, 1);
   } else if (nivel == c->cantidad) {
-    int costoVuelta =
-        ciudades_devuelve_costo(c, 0, actual->movimientos[nivel - 1]);
-    if (costoVuelta != -1) {
-      actual->costo += costoVuelta;
-      if (actual->costo < mejor->costo || mejor->costo == -1) {
-        for (int i = 0; i < c->cantidad; i++)
-          mejor->movimientos[i] = actual->movimientos[i];
-        mejor->costo = actual->costo;
-      }
-      actual->costo -= costoVuelta;
+    int costoVuelta = c->matrizCostos[actual->movimientos[nivel - 1]];
+    if (costoVuelta != 0 &&
+        (mejor->costo == -1 || actual->costo + costoVuelta < mejor->costo)) {
+      for (int i = 0; i < c->cantidad; i++)
+        mejor->movimientos[i] = actual->movimientos[i];
+      mejor->costo = actual->costo + costoVuelta;
     }
   } else {
     for (int i = 1; i < c->cantidad; i++) {
-      if (!in_array(actual->movimientos, nivel, i)) {
-        int costoViaje =
-            ciudades_devuelve_costo(c, actual->movimientos[nivel - 1], i);
-        if (costoViaje != -1 &&
-            (actual->costo + costoViaje < mejor->costo || mejor->costo == -1)) {
+      int esta = 0;
+      for (int j = 1; j < nivel && !esta; j++)
+        if (i == actual->movimientos[j]) esta = 1;
+      if (!esta) {
+        int indiceCosto = i * c->cantidad + actual->movimientos[nivel - 1];
+        int costoViaje = c->matrizCostos[indiceCosto];
+        if (costoViaje != 0 &&
+            (mejor->costo == -1 || actual->costo + costoViaje < mejor->costo)) {
           actual->movimientos[nivel] = i;
           actual->costo += costoViaje;
           brute_force(c, mejor, actual, nivel + 1);
