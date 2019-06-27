@@ -16,12 +16,22 @@ typedef struct _Error {
   int datoAuxiliar;
 } * Error;
 
+/*
+ * copia_palabra : Char* -> Char*
+ * Reciba una palabra, devuelve una copia en memoria de la misma.
+ */
 char* copia_palabra(char* palabra) {
   char* word = malloc(sizeof(char) * (strlen(palabra) + 1));
   strcpy(word, palabra);
   return word;
 }
 
+/*
+ * crea_ciudad : Char* -> Ciudad
+ * Recibe un nombre de ciudad, devuelve una estructura Ciudad con la memoria
+ * necesaria alocada y el nombre copiado en la estructura.
+ * -No depende del char* ingresado.
+ */
 Ciudad crea_ciudad(char* nombre) {
   Ciudad c = malloc(sizeof(struct _Ciudad));
   c->ciudad = copia_palabra(nombre);
@@ -29,12 +39,23 @@ Ciudad crea_ciudad(char* nombre) {
   return c;
 }
 
+/*
+ * destruye_ciudad : Ciudad -> Void
+ * Funcion que recibe una estructura Ciudad y libera toda su memoria.
+ * Se define con void* para hacerla compatible con slist_destruir.
+ */
 void destruye_ciudad(void* dato) {
   Ciudad c = dato;
   free(c->ciudad);
   free(c);
 }
 
+/*
+ * crea_error : Int Int -> Error
+ * Recibe un tipo de error y su dato auxiliar.
+ * Devuelve una estructura Error con la memoria necesaria alocada y los datos
+ * ingresados dentro.
+ */
 Error crea_error(int tipo, int dato) {
   Error e = malloc(sizeof(struct _Error));
   e->tipo = tipo;
@@ -42,8 +63,18 @@ Error crea_error(int tipo, int dato) {
   return e;
 }
 
+/*
+ * destruye_error : Error -> Void
+ * Recibe una estructura Error y libera toda su memoria alocada.
+ * Se define con void* para hacerla compatible con slist_destruir.
+ */
 void destruye_error(void* dato) { free(dato); }
 
+/*
+ * ciudad_en_lista : SList Char* -> Int
+ * Recibe una lista de estructuras Ciudad y un nombre de ciudad.
+ * Devuelve 1 si la ciudad dada se encuentra en la lista, de lo contrario 0.
+ */
 int ciudad_en_lista(SList lista, char* nombreCiudad) {
   while (lista != NULL) {
     Ciudad c = lista->dato;
@@ -53,6 +84,11 @@ int ciudad_en_lista(SList lista, char* nombreCiudad) {
   return 0;
 }
 
+/*
+ * ciudad_agrega_conexion : SList Char* Char* -> Void
+ * Recibe una lista de estructuras Ciudad y el nombre de dos ciudades.
+ * Aumenta en 1 la cantidad de conexiones de cada ciudad.
+ */
 void ciudad_agrega_conexion(SList ciudades, char* ciudad1, char* ciudad2) {
   int colocadas = 0, c1 = 0, c2 = 0;
   while (ciudades != NULL && colocadas != 2) {
@@ -73,10 +109,13 @@ void ciudad_agrega_conexion(SList ciudades, char* ciudad1, char* ciudad2) {
   }
 }
 
+/*
+ * imprime_errores : SList -> Void
+ * Por cada Error en la lista, imprime su advertencia relacionada.
+ */
 void imprime_errores(SList errores) {
   while (errores != NULL) {
     Error e = errores->dato;
-    printf("%d ", e->tipo);
     switch (e->tipo) {
       case -1:
         printf("El archico no posee toda la informacion necesaria.\n");
@@ -142,11 +181,22 @@ void imprime_errores(SList errores) {
         printf("Existe un caracter no numérico en el costo de la línea %d.\n",
                e->datoAuxiliar);
         break;
+      case 17:
+        printf("Las ciudades en la línea %d tienen un costo de 0.\n",
+               e->datoAuxiliar);
+        break;
     }
     errores = errores->sig;
   }
 }
 
+/*
+ * funcion_eof : SList Char -> Int
+ * Recibe una lista de Errores y un caracter.
+ * Si el caracter ingresado es el valor EOF, se agrega un error a la lista y
+ * devuelve 1.
+ * De lo contrario devuelve 0.
+ */
 int funcion_eof(SList errores, char bufferc) {
   if (bufferc == EOF) {
     errores = slist_agregar_final(errores, crea_error(-1, 0));
@@ -157,6 +207,12 @@ int funcion_eof(SList errores, char bufferc) {
   return 0;
 }
 
+/*
+ * falta_conexion : SList -> Void
+ * Recibe una lista de ciudades.
+ * Revisa una por una, si alguna ciudad tiene menos de una conexión se le
+ * notifica al usuario por consola.
+ */
 void falta_conexion(SList ciudades) {
   while (ciudades != NULL) {
     Ciudad c = ciudades->dato;
@@ -166,46 +222,50 @@ void falta_conexion(SList ciudades) {
   }
 }
 
-void revisa_linea_ciudades(FILE* archivo) {}
-
 int main(int argc, char* argv[]) {
   if (argc != 2) {
     printf("La cantidad de argumentos es incorrecta.\n");
     return 0;
   }
+
   FILE* archivo = fopen(argv[1], "r");
   if (archivo == NULL) {
     printf("El archivo \"%s\" no existe.\n", argv[1]);
     return 0;
   }
+
+  SList errores = slist_crear();  // Lista de Errores
+
+  /* Reviso la primer línea en busca de "Ciudades" */
   char buffer[SIZEBUFFER], bufferc;
-  SList errores = slist_crear();
   int hayerror = 0;
   fscanf(archivo, "%s", buffer);
   if (strcmp(buffer, "Ciudades")) {
     errores = slist_agregar_final(errores, crea_error(0, 0));
     hayerror = 1;
+    bufferc = fgetc(archivo);
   } else {
     bufferc = fgetc(archivo);
     if (funcion_eof(errores, bufferc))
-      return 0;
+      return 0;  // Si es verdadero, termino el programa abruptamente.
     else if (bufferc == ' ') {
       hayerror = 1;
       errores = slist_agregar_final(errores, crea_error(1, 0));
     }
   }
-
-  if (!hayerror) {
+  if (!hayerror) {  // Si no hay error termino la línea facilmente
     if (bufferc == '\r') fgetc(archivo);
-  } else {
+  } else {  // En caso contrario, avanzo hasta terminar linea
     while (bufferc != '\n' && bufferc != EOF) bufferc = fgetc(archivo);
   }
+  if (funcion_eof(errores, bufferc))
+    return 0;  // Termino el programa abruptamente.
+  /*************************************************/
 
-  if (funcion_eof(errores, bufferc)) return 0;
-
-  bufferc = fgetc(archivo);  // Comienza la nueva linea
+  /* Leo la línea siguiente, almaceno las ciudades */
+  bufferc = fgetc(archivo);  // Comienza la nueva linea.
   int i = 0, estado = 1, linea = 2, palabra = 1;
-  SList ciudades = slist_crear();
+  SList ciudades = slist_crear();  // Creo la lista de ciudades.
   while (bufferc != '\r' && bufferc != '\n' && bufferc != EOF) {
     if (bufferc == ',') {
       if (estado == 1) {
@@ -254,19 +314,18 @@ int main(int argc, char* argv[]) {
       }
     }
   }
-
-  if (funcion_eof(errores, bufferc)) return 0;
-
-  while (bufferc == '\r' || bufferc == '\n') {
+  if (funcion_eof(errores, bufferc)) return 0;  // Termino abruptamente.
+  while (bufferc == '\r' || bufferc == '\n') {  // Finalizo la linea.
     if (bufferc == '\n') linea++;
     bufferc = fgetc(archivo);
   }
   if (funcion_eof(errores, bufferc)) return 0;
+  /***********************************************/
 
+  /* Busco la línea de "Costos" */
   if (linea != 3) {
     errores = slist_agregar_final(errores, crea_error(6, linea));
   }
-
   hayerror = 0;
   fscanf(archivo, "%s", buffer);
   if (bufferc != 'C' || strcmp(buffer, "ostos")) {
@@ -289,10 +348,18 @@ int main(int argc, char* argv[]) {
   }
   linea++;
   if (funcion_eof(errores, bufferc)) return 0;
+  /******************************************************/
 
+  /* Reviso la linea que almacena los costos */
+  /* Estado puede tener 3 valores: 1,2,3.
+    1-Significa que estoy leyendo la primer ciudad
+    2-Significa que estoy leyendo la segunda ciudad
+    3-Significa que estoy leyendo el costo
+  */
   char buffer2[SIZEBUFFER];
   estado = 1, i = 0;
   int buscandofin = 0, cantidadInt = 0, faltaCiudad = 0, anteriorComa = 0;
+  int numeroCosto = 0;
   while (bufferc != EOF) {
     if (bufferc == ' ') {
       errores = slist_agregar_final(errores, crea_error(9, linea));
@@ -343,10 +410,13 @@ int main(int argc, char* argv[]) {
           ciudad_agrega_conexion(ciudades, buffer, buffer2);
         if (cantidadInt == 0)
           errores = slist_agregar_final(errores, crea_error(13, linea));
+        else if (numeroCosto == 0)
+          errores = slist_agregar_final(errores, crea_error(17, linea));
       }
       estado = 1;
       bufferc = fgetc(archivo);
       cantidadInt = 0;
+      numeroCosto = 0;
       anteriorComa = 0;
       faltaCiudad = 0;
       linea++;
@@ -362,15 +432,22 @@ int main(int argc, char* argv[]) {
       } else {
         if (!isdigit(bufferc))
           errores = slist_agregar_final(errores, crea_error(16, linea));
-        else
+        else {
           cantidadInt++;
+          numeroCosto = numeroCosto * 10 + (bufferc - '0');
+        }
         bufferc = fgetc(archivo);
       }
       anteriorComa = 0;
     }
   }
+  /*******************************************************/
+
+  /* Imprimo errores y reviso ciudades aisladas */
   imprime_errores(errores);
   falta_conexion(ciudades);
+  /******************************************/
+
   slist_destruir(errores, destruye_error);
   slist_destruir(ciudades, destruye_ciudad);
   fclose(archivo);

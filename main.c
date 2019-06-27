@@ -58,7 +58,7 @@ int ciudades_obtiene_pos(Ciudades c, char* nombre) {
   if (termine)
     return --i;
   else
-    return -1;
+    return 0;
   // Esto esta dado como un seguro pero si el archivo esta bien escrito no
   // deberia darse esta situación.
 }
@@ -160,24 +160,13 @@ Ciudades lectura_archivo(char* archivoEntrada) {
     ciudades_agregar_costo(c, buffer, buffer2, costo);
     bufferc = fgetc(archivo);  // Saltea un caracter de fin de linea
     // Si el caracter anterior es \r vuelve a saltear
-    if (bufferc == '\r') fgetc(archivo);
+    if (bufferc == '\r') bufferc = fgetc(archivo);
   }
 
   free(buffer);
   free(buffer2);
   fclose(archivo);
   return c;
-}
-
-/*
- * in_array : Int* Int Int -> Int
- * Recibe un array, su tamaño y un dato.
- * Devuelve 1 si el dato esta en el array, de lo contrario 0.
- */
-int in_array(int* array, int size, int dato) {  // SACAR
-  for (int i = 0; i < size; i++)
-    if (dato == array[i]) return 1;
-  return 0;
 }
 
 /*
@@ -251,6 +240,8 @@ int nearest_neighbour(Ciudades c, Solucion actual, int nivel) {
  */
 void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
   if (nivel == c->cantidad) {
+    // No utilizo la funcion ciudades_devuelve_costos porque aumenta el tiempo
+    // de ejecución.
     int costoVuelta = c->matrizCostos[actual->movimientos[nivel - 1]];
     if (costoVuelta != 0 &&
         (mejor->costo == -1 || actual->costo + costoVuelta < mejor->costo)) {
@@ -259,13 +250,19 @@ void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
       mejor->costo = actual->costo + costoVuelta;
     }
   } else {
-    for (int i = 1; i < c->cantidad; i++) {
+    for (int i = 1; i < c->cantidad;
+         i++) {  // Prueba todos las ciudades posibles menos 0
       int esta = 0;
+
+      // Revisa si el i ya esta en el array
       for (int j = 1; j < nivel && !esta; j++)
         if (i == actual->movimientos[j]) esta = 1;
+
       if (!esta) {
+        // Mismo caso, no utilizo ciudades_devuelve_costos.
         int indiceCosto = i * c->cantidad + actual->movimientos[nivel - 1];
         int costoViaje = c->matrizCostos[indiceCosto];
+
         if (costoViaje != 0 &&
             (mejor->costo == -1 || actual->costo + costoViaje < mejor->costo)) {
           actual->movimientos[nivel] = i;
@@ -286,14 +283,17 @@ void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
 Solucion travelling_salesman_problem(Ciudades c) {
   Solucion resultado = crea_solucion(c->cantidad);
   int haySolucion = 1;
-  if (c->cantidad > 15) {  // Decidi el limite de 15 por que hasta 15 se
-                           // consigue un tiempo raznable sin limitar
+  if (c->cantidad > 15) {
+    // Decidi el limite de 15 por que hasta 15 conseguí un tiempo razonable solo
+    // con fuerza bruta.
     int correcto = (nearest_neighbour(c, resultado, 0));
     if (!correcto) {
       resultado->costo = -1;
       haySolucion = 0;
     }
   }
+  // Si haySolucion = 0, implica que el nearest_neighbour no encontro solución,
+  // por lo que no es necesario volver probar toda las posibilidades.
   if (haySolucion) {
     Solucion trabajo = crea_solucion(c->cantidad);
     trabajo->costo = 0;
@@ -329,6 +329,10 @@ void imprime_salida(char* archivoSalida, Ciudades c, Solucion resultado) {
   fclose(archivo);
 }
 
+/*
+ * main : Int Char*[] -> Int
+ * Funcion principal del programa.
+ */
 int main(int argc, char* argv[]) {
   if (argc != 3) {
     printf("La cantidad de argumentos es incorrecta.\n");
