@@ -291,7 +291,6 @@ int main(int argc, char* argv[]) {
   if (funcion_eof(errores, bufferc)) return 0;
 
   char buffer2[SIZEBUFFER];
-  // strcpy(buffer2, "");
   estado = 1, i = 0;
   int buscandofin = 0, cantidadInt = 0, faltaCiudad = 0, anteriorComa = 0;
   while (bufferc != EOF) {

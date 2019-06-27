@@ -28,6 +28,7 @@ Ciudades crea_ciudades(int cantidad) {
     nuevaCiudades->nombres = malloc(sizeof(char*) * cantidad);
     nuevaCiudades->matrizCostos = calloc(cantidad * cantidad, sizeof(int));
     // La funcion calloc inicializa la matriz con valor 0
+    // Segun el PDF todos los costos son Enteros positivos
   }
   return nuevaCiudades;
 }
@@ -41,15 +42,6 @@ void ciudades_destruir(Ciudades c) {
   free(c->nombres);
   free(c->matrizCostos);
   free(c);
-}
-
-/*
- * ciudades_agregar_nombres : Ciudades Int Char* -> Void
- * Recibe una estructura Ciudades, una posicion y un string.
- * Almacena el string en la posicion dada dentro de Ciudades->nombres
- */
-void ciudades_agregar_nombre(Ciudades c, int pos, char* nombre) {
-  c->nombres[pos] = nombre;
 }
 
 /*
@@ -154,7 +146,7 @@ Ciudades lectura_archivo(char* archivoEntrada) {
   for (int i = 0; !cola_es_vacia(nombresCiudades); i++) {
     char* nombre = cola_primero(nombresCiudades);
     cola_desencolar(nombresCiudades);
-    ciudades_agregar_nombre(c, i, nombre);
+    c->nombres[i] = nombre;
   }
   cola_destruir(nombresCiudades);
 
@@ -189,6 +181,65 @@ int in_array(int* array, int size, int dato) {  // SACAR
 }
 
 /*
+ * nearest_neighbour : Ciudades Solucion Int -> Int
+ * Recibe una estructura Ciudades, una Solucion y el nivel de recursion.
+ * Aplica una heurística de vecino mas cercano, que permite hallar una cota
+ * superior rapida de los datos dados. Esto permite disminuir las búsquedas en
+ * la fuerza bruta para problemas grandes.
+ * Si encontró un solucion devuelve 1, de lo contrario devuelve 0.
+ */
+int nearest_neighbour(Ciudades c, Solucion actual, int nivel) {
+  if (nivel == 0) {
+    actual->movimientos[0] = 0;
+    actual->costo = 0;
+    return nearest_neighbour(c, actual, 1);
+  } else if (nivel == c->cantidad) {
+    int costo = c->matrizCostos[actual->movimientos[nivel - 1]];
+    if (costo != 0) {
+      actual->costo += costo;
+      return 1;
+    } else
+      return 0;
+  } else {
+    int posibles[c->cantidad], encontrados = 0;
+    int anterior = actual->movimientos[nivel - 1];
+    for (int i = 1; i < c->cantidad; i++) {
+      int esta = 0;
+      for (int j = 1; j < nivel && !esta; j++)
+        if (i == actual->movimientos[j]) esta = 1;
+      if (!esta) {
+        int costoI = c->matrizCostos[anterior * c->cantidad + i];
+        if (costoI != 0) {
+          int j, termine = 0;
+          for (j = 0; j < encontrados && !termine; j++) {
+            int costoJ = c->matrizCostos[posibles[j] * c->cantidad + anterior];
+            if (costoJ > costoI) termine = 1;
+          }
+          if (termine) {
+            j--;
+            for (int k = c->cantidad - 1; k > j; k--)
+              posibles[k] = posibles[k - 1];
+          }
+          posibles[j] = i;
+          encontrados++;
+        }
+      }
+    }
+    for (int i = 0; i < encontrados; i++) {
+      int costo = c->matrizCostos[anterior * c->cantidad + posibles[i]];
+      actual->costo += costo;
+      actual->movimientos[nivel] = posibles[i];
+      int resultado = nearest_neighbour(c, actual, nivel + 1);
+      if (!resultado) {
+        actual->costo -= costo;
+      } else
+        return 1;
+    }
+    return 0;
+  }
+}
+
+/*
  * brute_force : Ciudades Solucion Solucion Int -> Void
  * Funcion recursiva, recibe:
  * *Estructura Ciudad
@@ -199,11 +250,7 @@ int in_array(int* array, int size, int dato) {  // SACAR
  * Si no se encuentra, mejor->costo permanece en -1.
  */
 void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
-  if (nivel == 0) {
-    actual->movimientos[0] = 0;
-    actual->costo = 0;
-    brute_force(c, mejor, actual, 1);
-  } else if (nivel == c->cantidad) {
+  if (nivel == c->cantidad) {
     int costoVuelta = c->matrizCostos[actual->movimientos[nivel - 1]];
     if (costoVuelta != 0 &&
         (mejor->costo == -1 || actual->costo + costoVuelta < mejor->costo)) {
@@ -238,9 +285,23 @@ void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
  */
 Solucion travelling_salesman_problem(Ciudades c) {
   Solucion resultado = crea_solucion(c->cantidad);
-  Solucion trabajo = crea_solucion(c->cantidad);
-  brute_force(c, resultado, trabajo, 0);
-  solucion_destruir(trabajo);
+  int haySolucion = 1;
+  if (c->cantidad > 15) {  // Decidi el limite de 15 por que hasta 15 se
+                           // consigue un tiempo raznable sin limitar
+    int correcto = (nearest_neighbour(c, resultado, 0));
+    if (!correcto) {
+      resultado->costo = -1;
+      haySolucion = 0;
+    }
+  }
+  if (haySolucion) {
+    Solucion trabajo = crea_solucion(c->cantidad);
+    trabajo->costo = 0;
+    trabajo->movimientos[0] = 0;
+    brute_force(c, resultado, trabajo, 1);
+    solucion_destruir(trabajo);
+  }
+
   return resultado;
 }
 
