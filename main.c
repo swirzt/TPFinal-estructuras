@@ -296,6 +296,7 @@ void imprime_salida(char* archivoSalida, Ciudades c) {
     fprintf(archivo, "%s,%s,%d\n", ciudad1, ciudad2, costo);
   }
   fprintf(archivo, "Costo total: %d\n", c->costoViaje);
+  // Línea no pedida pero me pareció conveniente.
   fclose(archivo);
 }
 
@@ -326,7 +327,7 @@ int main(int argc, char* argv[]) {
   travelling_salesman_problem(c);
 
   if (c->costoViaje == -1) {
-    printf("No se encontro una solucion con los datos dados.\n");
+    printf("No se encontro una solución con los datos dados.\n");
     ciudades_destruir(c);
     return 0;
   }
