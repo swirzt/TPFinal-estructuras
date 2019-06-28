@@ -149,12 +149,13 @@ Ciudades lectura_archivo(char* archivoEntrada) {
 }
 
 /*
- * nearest_neighbour : Ciudades Solucion Int -> Int
- * Recibe una estructura Ciudades, una Solucion y el nivel de recursion.
+ * nearest_neighbour : Ciudades Int -> Int
+ * Recibe una estructura Ciudades y el nivel de recursion.
  * Aplica una heurística de vecino mas cercano, que permite hallar una cota
- * superior rapida de los datos dados. Esto permite disminuir las búsquedas en
+ * superior rápida de los datos dados. Esto permite disminuir las búsquedas en
  * la fuerza bruta para problemas grandes.
- * Si encontró un solucion devuelve 1, de lo contrario devuelve 0.
+ * Almacena la solución en la estructura Ciudades.
+ * Si encontró un solución devuelve 1, de lo contrario devuelve 0.
  */
 int nearest_neighbour(Ciudades c, int nivel) {
   if (nivel == 0) {
@@ -208,14 +209,11 @@ int nearest_neighbour(Ciudades c, int nivel) {
 }
 
 /*
- * brute_force : Ciudades Solucion Solucion Int -> Void
- * Funcion recursiva, recibe:
- * *Estructura Ciudad
- * *Estructura Solucion (Donde almacena la mejor solucion conseguida)
- * *Estructura Solucion (Donde trabaja la funcion)
- * *Int (Elemento de control de nivel de recursion)
- * Devuelve el camino mas corto que pasa por todas las ciudades.
- * Si no se encuentra, mejor->costo permanece en -1.
+ * brute_force : Ciudades Int* Int Int -> Void
+ * Recibe una estructura Ciudad, un array de ints y 2 ints.
+ * El ultimo Int es el iterador de recursión.
+ * Almacena la mejor solucion hallada en la estructura Ciudades.
+ * Si no encuentra ninguna, costoViaje en la estructura permanece en -1.
  */
 void brute_force(Ciudades c, int* actual, int costoActual, int nivel) {
   if (nivel == c->cantidad) {
@@ -256,7 +254,6 @@ void brute_force(Ciudades c, int* actual, int costoActual, int nivel) {
 /*
  * travelling_salesman_problem : Ciudades -> Solucion
  * Inicializa los argumentos necesarios para llamar a la función recursiva.
- * Devuelve la solucion de la recursión.
  */
 void travelling_salesman_problem(Ciudades c) {
   int haySolucion = 1;
@@ -279,9 +276,9 @@ void travelling_salesman_problem(Ciudades c) {
 }
 
 /*
- * imprime_salida : Char* Ciudades Solucion -> Void
- * Recibe Una estructura Ciudades, una Solucion y el archivo de salida.
- * Imprime la Solucion en el archivo.
+ * imprime_salida : Char* Ciudades -> Void
+ * Recibe el archivo de salida y una estructura Ciudades.
+ * Imprime la solución en el archivo.
  */
 void imprime_salida(char* archivoSalida, Ciudades c) {
   FILE* archivo = fopen(archivoSalida, "w");
