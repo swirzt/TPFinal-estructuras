@@ -7,12 +7,9 @@ typedef struct _Ciudades {
   int cantidad;
   char** nombres;
   int* matrizCostos;
-} * Ciudades;
-
-typedef struct _Solucion {
-  int costo;
+  int costoViaje;
   int* movimientos;
-} * Solucion;
+} * Ciudades;
 
 #define SIZEBUFFER 256
 
@@ -28,7 +25,9 @@ Ciudades crea_ciudades(int cantidad) {
     nuevaCiudades->nombres = malloc(sizeof(char*) * cantidad);
     nuevaCiudades->matrizCostos = calloc(cantidad * cantidad, sizeof(int));
     // La funcion calloc inicializa la matriz con valor 0
-    // Segun el PDF todos los costos son Enteros positivos
+    // Según el PDF todos los costos son Enteros positivos
+    nuevaCiudades->costoViaje = -1;
+    nuevaCiudades->movimientos = malloc(sizeof(int) * cantidad);
   }
   return nuevaCiudades;
 }
@@ -41,6 +40,7 @@ void ciudades_destruir(Ciudades c) {
   for (int i = 0; i < c->cantidad; i++) free(c->nombres[i]);
   free(c->nombres);
   free(c->matrizCostos);
+  free(c->movimientos);
   free(c);
 }
 
@@ -82,27 +82,6 @@ void ciudades_agregar_costo(Ciudades c, char* city1, char* city2, int costo) {
  */
 int ciudades_devuelve_costo(Ciudades c, int c1, int c2) {
   return c->matrizCostos[c1 * c->cantidad + c2];
-}
-
-/*
- * crea_solucion : Int -> Solucion
- * Recibe un tamaño, devuelve una estructura Solucion con memoria alocada para
- * ese tamaño.
- */
-Solucion crea_solucion(int size) {
-  Solucion s = malloc(sizeof(struct _Solucion));
-  s->costo = -1;
-  s->movimientos = malloc(sizeof(int) * size);
-  return s;
-}
-
-/*
- * solucion_destruir : Solucion -> Void
- * Recibe una estructura Solucion, libera toda su memoria alocada.
- */
-void solucion_destruir(Solucion s) {
-  free(s->movimientos);
-  free(s);
 }
 
 /*
@@ -177,25 +156,25 @@ Ciudades lectura_archivo(char* archivoEntrada) {
  * la fuerza bruta para problemas grandes.
  * Si encontró un solucion devuelve 1, de lo contrario devuelve 0.
  */
-int nearest_neighbour(Ciudades c, Solucion actual, int nivel) {
+int nearest_neighbour(Ciudades c, int nivel) {
   if (nivel == 0) {
-    actual->movimientos[0] = 0;
-    actual->costo = 0;
-    return nearest_neighbour(c, actual, 1);
+    c->movimientos[0] = 0;
+    c->costoViaje = 0;
+    return nearest_neighbour(c, 1);
   } else if (nivel == c->cantidad) {
-    int costo = c->matrizCostos[actual->movimientos[nivel - 1]];
+    int costo = c->matrizCostos[c->movimientos[nivel - 1]];
     if (costo != 0) {
-      actual->costo += costo;
+      c->costoViaje += costo;
       return 1;
     } else
       return 0;
   } else {
     int posibles[c->cantidad], encontrados = 0;
-    int anterior = actual->movimientos[nivel - 1];
+    int anterior = c->movimientos[nivel - 1];
     for (int i = 1; i < c->cantidad; i++) {
       int esta = 0;
       for (int j = 1; j < nivel && !esta; j++)
-        if (i == actual->movimientos[j]) esta = 1;
+        if (i == c->movimientos[j]) esta = 1;
       if (!esta) {
         int costoI = c->matrizCostos[anterior * c->cantidad + i];
         if (costoI != 0) {
@@ -216,11 +195,11 @@ int nearest_neighbour(Ciudades c, Solucion actual, int nivel) {
     }
     for (int i = 0; i < encontrados; i++) {
       int costo = c->matrizCostos[anterior * c->cantidad + posibles[i]];
-      actual->costo += costo;
-      actual->movimientos[nivel] = posibles[i];
-      int resultado = nearest_neighbour(c, actual, nivel + 1);
+      c->costoViaje += costo;
+      c->movimientos[nivel] = posibles[i];
+      int resultado = nearest_neighbour(c, nivel + 1);
       if (!resultado) {
-        actual->costo -= costo;
+        c->costoViaje -= costo;
       } else
         return 1;
     }
@@ -238,16 +217,15 @@ int nearest_neighbour(Ciudades c, Solucion actual, int nivel) {
  * Devuelve el camino mas corto que pasa por todas las ciudades.
  * Si no se encuentra, mejor->costo permanece en -1.
  */
-void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
+void brute_force(Ciudades c, int* actual, int costoActual, int nivel) {
   if (nivel == c->cantidad) {
     // No utilizo la funcion ciudades_devuelve_costos porque aumenta el tiempo
     // de ejecución.
-    int costoVuelta = c->matrizCostos[actual->movimientos[nivel - 1]];
+    int costoVuelta = c->matrizCostos[actual[nivel - 1]];
     if (costoVuelta != 0 &&
-        (mejor->costo == -1 || actual->costo + costoVuelta < mejor->costo)) {
-      for (int i = 0; i < c->cantidad; i++)
-        mejor->movimientos[i] = actual->movimientos[i];
-      mejor->costo = actual->costo + costoVuelta;
+        (c->costoViaje == -1 || costoActual + costoVuelta < c->costoViaje)) {
+      for (int i = 0; i < c->cantidad; i++) c->movimientos[i] = actual[i];
+      c->costoViaje = costoActual + costoVuelta;
     }
   } else {
     for (int i = 1; i < c->cantidad;
@@ -256,19 +234,19 @@ void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
 
       // Revisa si el i ya esta en el array
       for (int j = 1; j < nivel && !esta; j++)
-        if (i == actual->movimientos[j]) esta = 1;
+        if (i == actual[j]) esta = 1;
 
       if (!esta) {
         // Mismo caso, no utilizo ciudades_devuelve_costos.
-        int indiceCosto = i * c->cantidad + actual->movimientos[nivel - 1];
+        int indiceCosto = i * c->cantidad + actual[nivel - 1];
         int costoViaje = c->matrizCostos[indiceCosto];
 
         if (costoViaje != 0 &&
-            (mejor->costo == -1 || actual->costo + costoViaje < mejor->costo)) {
-          actual->movimientos[nivel] = i;
-          actual->costo += costoViaje;
-          brute_force(c, mejor, actual, nivel + 1);
-          actual->costo -= costoViaje;
+            (c->costoViaje == -1 || costoActual + costoViaje < c->costoViaje)) {
+          actual[nivel] = i;
+          // actual->costo += costoViaje;
+          brute_force(c, actual, costoActual + costoViaje, nivel + 1);
+          // actual->costo -= costoViaje;
         }
       }
     }
@@ -280,29 +258,24 @@ void brute_force(Ciudades c, Solucion mejor, Solucion actual, int nivel) {
  * Inicializa los argumentos necesarios para llamar a la función recursiva.
  * Devuelve la solucion de la recursión.
  */
-Solucion travelling_salesman_problem(Ciudades c) {
-  Solucion resultado = crea_solucion(c->cantidad);
+void travelling_salesman_problem(Ciudades c) {
   int haySolucion = 1;
   if (c->cantidad > 15) {
-    // Decidi el limite de 15 por que hasta 15 conseguí un tiempo razonable solo
+    // Decidí el limite de 15 por que hasta 15 conseguí un tiempo razonable solo
     // con fuerza bruta.
-    int correcto = (nearest_neighbour(c, resultado, 0));
+    int correcto = (nearest_neighbour(c, 0));
     if (!correcto) {
-      resultado->costo = -1;
+      c->costoViaje = -1;
       haySolucion = 0;
     }
   }
   // Si haySolucion = 0, implica que el nearest_neighbour no encontro solución,
   // por lo que no es necesario volver probar toda las posibilidades.
   if (haySolucion) {
-    Solucion trabajo = crea_solucion(c->cantidad);
-    trabajo->costo = 0;
-    trabajo->movimientos[0] = 0;
-    brute_force(c, resultado, trabajo, 1);
-    solucion_destruir(trabajo);
+    int iterador[c->cantidad];
+    iterador[0] = 0;
+    brute_force(c, iterador, 0, 1);
   }
-
-  return resultado;
 }
 
 /*
@@ -310,7 +283,7 @@ Solucion travelling_salesman_problem(Ciudades c) {
  * Recibe Una estructura Ciudades, una Solucion y el archivo de salida.
  * Imprime la Solucion en el archivo.
  */
-void imprime_salida(char* archivoSalida, Ciudades c, Solucion resultado) {
+void imprime_salida(char* archivoSalida, Ciudades c) {
   FILE* archivo = fopen(archivoSalida, "w");
   if (archivo == NULL) {
     printf("No se pudo crear el archivo \"%s\"", archivoSalida);
@@ -318,14 +291,14 @@ void imprime_salida(char* archivoSalida, Ciudades c, Solucion resultado) {
   }
   int cantidadCiudades = c->cantidad;
   for (int i = 0; i < cantidadCiudades; i++) {
-    int indice1 = resultado->movimientos[i % cantidadCiudades];
-    int indice2 = resultado->movimientos[(i + 1) % cantidadCiudades];
+    int indice1 = c->movimientos[i % cantidadCiudades];
+    int indice2 = c->movimientos[(i + 1) % cantidadCiudades];
     char* ciudad1 = c->nombres[indice1];
     char* ciudad2 = c->nombres[indice2];
     int costo = ciudades_devuelve_costo(c, indice1, indice2);
     fprintf(archivo, "%s,%s,%d\n", ciudad1, ciudad2, costo);
   }
-  fprintf(archivo, "Costo total: %d\n", resultado->costo);
+  fprintf(archivo, "Costo total: %d\n", c->costoViaje);
   fclose(archivo);
 }
 
@@ -353,17 +326,15 @@ int main(int argc, char* argv[]) {
     return 0;
   }
 
-  Solucion s = travelling_salesman_problem(c);
+  travelling_salesman_problem(c);
 
-  if (s->costo == -1) {
+  if (c->costoViaje == -1) {
     printf("No se encontro una solucion con los datos dados.\n");
     ciudades_destruir(c);
-    solucion_destruir(s);
     return 0;
   }
 
-  imprime_salida(argv[2], c, s);
+  imprime_salida(argv[2], c);
   ciudades_destruir(c);
-  solucion_destruir(s);
   return 1;
 }
