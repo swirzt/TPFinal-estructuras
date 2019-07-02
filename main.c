@@ -3,6 +3,8 @@
 #include <string.h>
 #include "colasenlazadas.h"
 
+// Si queres hace INLINE
+
 typedef struct _Ciudades {
   int cantidad;
   char** nombres;
@@ -21,13 +23,17 @@ typedef struct _Ciudades {
 Ciudades crea_ciudades(int cantidad) {
   Ciudades nuevaCiudades = malloc(sizeof(struct _Ciudades));
   nuevaCiudades->cantidad = cantidad;
+  nuevaCiudades->costoViaje = -1;
   if (cantidad >= 0) {
     nuevaCiudades->nombres = malloc(sizeof(char*) * cantidad);
     nuevaCiudades->matrizCostos = calloc(cantidad * cantidad, sizeof(int));
     // La funcion calloc inicializa la matriz con valor 0
     // Según el PDF todos los costos son Enteros positivos
-    nuevaCiudades->costoViaje = -1;
     nuevaCiudades->movimientos = malloc(sizeof(int) * cantidad);
+  } else {
+    nuevaCiudades->nombres = NULL;
+    nuevaCiudades->matrizCostos = NULL;
+    nuevaCiudades->movimientos = NULL;
   }
   return nuevaCiudades;
 }
@@ -209,13 +215,13 @@ int nearest_neighbour(Ciudades c, int nivel) {
 }
 
 /*
- * brute_force : Ciudades Int* Int Int -> Void
+ * dfs : Ciudades Int* Int Int* Int -> Void
  * Recibe una estructura Ciudad, un array de ints y 2 ints.
  * El ultimo Int es el iterador de recursión.
  * Almacena la mejor solucion hallada en la estructura Ciudades.
  * Si no encuentra ninguna, costoViaje en la estructura permanece en -1.
  */
-void brute_force(Ciudades c, int* actual, int costoActual, int nivel) {
+void dfs(Ciudades c, int* actual, int costoActual, int* visitados, int nivel) {
   if (nivel == c->cantidad) {
     // No utilizo la funcion ciudades_devuelve_costos porque aumenta el tiempo
     // de ejecución.
@@ -228,13 +234,7 @@ void brute_force(Ciudades c, int* actual, int costoActual, int nivel) {
   } else {
     for (int i = 1; i < c->cantidad;
          i++) {  // Prueba todos las ciudades posibles menos 0
-      int esta = 0;
-
-      // Revisa si el i ya esta en el array
-      for (int j = 1; j < nivel && !esta; j++)
-        if (i == actual[j]) esta = 1;
-
-      if (!esta) {
+      if (visitados[i] == 0) {
         // Mismo caso, no utilizo ciudades_devuelve_costos.
         int indiceCosto = i * c->cantidad + actual[nivel - 1];
         int costoViaje = c->matrizCostos[indiceCosto];
@@ -242,9 +242,9 @@ void brute_force(Ciudades c, int* actual, int costoActual, int nivel) {
         if (costoViaje != 0 &&
             (c->costoViaje == -1 || costoActual + costoViaje < c->costoViaje)) {
           actual[nivel] = i;
-          // actual->costo += costoViaje;
-          brute_force(c, actual, costoActual + costoViaje, nivel + 1);
-          // actual->costo -= costoViaje;
+          visitados[i] = 1;
+          dfs(c, actual, costoActual + costoViaje, visitados, nivel + 1);
+          visitados[i] = 0;
         }
       }
     }
@@ -252,12 +252,12 @@ void brute_force(Ciudades c, int* actual, int costoActual, int nivel) {
 }
 
 /*
- * travelling_salesman_problem : Ciudades -> Solucion
+ * travelling_salesman_problem : Ciudades -> Void
  * Inicializa los argumentos necesarios para llamar a la función recursiva.
  */
 void travelling_salesman_problem(Ciudades c) {
   int haySolucion = 1;
-  if (c->cantidad > 15) {
+  if (c->cantidad > 0) {
     // Decidí el limite de 15 por que hasta 15 conseguí un tiempo razonable solo
     // con fuerza bruta.
     int correcto = (nearest_neighbour(c, 0));
@@ -269,9 +269,12 @@ void travelling_salesman_problem(Ciudades c) {
   // Si haySolucion = 0, implica que el nearest_neighbour no encontro solución,
   // por lo que no es necesario volver probar toda las posibilidades.
   if (haySolucion) {
+    int* visitados = calloc(c->cantidad, sizeof(int));
     int iterador[c->cantidad];
     iterador[0] = 0;
-    brute_force(c, iterador, 0, 1);
+    visitados[0] = 1;
+    dfs(c, iterador, 0, visitados, 1);
+    free(visitados);
   }
 }
 
