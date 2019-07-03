@@ -257,7 +257,7 @@ void dfs(Ciudades c, int* actual, int costoActual, int* visitados, int nivel) {
  */
 void travelling_salesman_problem(Ciudades c) {
   int haySolucion = 1;
-  if (c->cantidad > 0) {
+  if (c->cantidad > 15) {
     // Decidí el limite de 15 por que hasta 15 conseguí un tiempo razonable solo
     // con fuerza bruta.
     int correcto = (nearest_neighbour(c, 0));
