@@ -13,13 +13,13 @@ TSP (Travelling salesman problem).
 
 La estructura usada en mi programa es de la forma:
 ```
-**typedef struct _Ciudades {
+typedef struct _Ciudades {
   int cantidad;
   char** nombres;
   int* matrizCostos;
   int costoViaje;
   int* movimientos;
-} * Ciudades;**
+} * Ciudades;
 ```
 Ciudades es siempre un puntero porque nunca hago uso de la estructura localmente, sino que
 siempre prefiero utilizarla en memoria.
