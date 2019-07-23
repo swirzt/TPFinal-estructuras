@@ -99,18 +99,18 @@ gcc -o check revisaentrada.c slist.o -pedantic -Wall -std=c99 -O
 ```
 Una vez compilado, se debe ejecutar el programa de control de entrada:
 
-**./check <archivoEntrada>**
+**./check archivoEntrada**
   
 Este imprimirá en consola todos los problemas encontrados, una vez solucionados se recomienda
 volver a ejecutar para comprobar que no se olvidó nada.
 
 Cuando el programa anterior no imprima nada se puede proceder a ejecutar el main.
 
-**./main <archivoEntrada> <archivoSalida>**
+**./main archivoEntrada archivoSalida**
   
 Si el programa encuentra algun percance durante su ejecución, este se imprimirá en consola, de lo
 contrario terminara sin decir nada.
 
-La solución será almacenada en **<archivoSalida>** con el costo total en la última línea.
+La solución será almacenada en **archivoSalida** con el costo total en la última línea.
 
 
