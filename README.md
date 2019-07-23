@@ -76,10 +76,10 @@ Si esta instalado, solo se debe escribir **make** con la consola ubicada en la c
 En caso contrario, debe instalarse o ejecutarse las siguientes líneas de forma manual:
 
 ```
-gcc -c colasenlazadas.c -pedantic -Wall -std=c
-gcc -o main main.c colasenlazadas.o -pedantic -Wall -std=c
-gcc -c slist.c -pedantic -Wall -std=c
-gcc -o check revisaentrada.c slist.o -pedantic -Wall -std=c
+gcc -c colasenlazadas.c -pedantic -Wall -std=c99 -O
+gcc -o main main.c colasenlazadas.o -pedantic -Wall -std=c99 -O
+gcc -c slist.c -pedantic -Wall -std=c99 -O
+gcc -o check revisaentrada.c slist.o -pedantic -Wall -std=c99 -O
 ```
 Una vez compilado, se debe ejecutar el programa de control de entrada:
 **./check <archivoEntrada>**
