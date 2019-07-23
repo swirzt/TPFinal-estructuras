@@ -238,8 +238,8 @@ int main(int argc, char* argv[]) {
 
   /* Reviso la primer línea en busca de "Ciudades" */
   char buffer[SIZEBUFFER], bufferc;
-  int hayerror = 0;
-  fscanf(archivo, "%s", buffer);
+  int hayerror = 0, basura;
+  basura = fscanf(archivo, "%s", buffer);
   if (strcmp(buffer, "Ciudades")) {
     errores = slist_agregar_final(errores, crea_error(0, 0));
     hayerror = 1;
@@ -327,7 +327,7 @@ int main(int argc, char* argv[]) {
     errores = slist_agregar_final(errores, crea_error(6, linea));
   }
   hayerror = 0;
-  fscanf(archivo, "%s", buffer);
+  basura = fscanf(archivo, "%s", buffer);
   if (bufferc != 'C' || strcmp(buffer, "ostos")) {
     errores = slist_agregar_final(errores, crea_error(7, linea));
     hayerror = 1;
@@ -451,5 +451,6 @@ int main(int argc, char* argv[]) {
   slist_destruir(errores, destruye_error);
   slist_destruir(ciudades, destruye_ciudad);
   fclose(archivo);
+  basura++;
   return 1;
 }

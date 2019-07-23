@@ -114,9 +114,9 @@ Ciudades lectura_archivo(char* archivoEntrada) {
 
   Cola nombresCiudades = cola_crear();
   char* buffer = malloc(sizeof(char) * SIZEBUFFER);
-  int cantidadPalabras = 0;
-  fscanf(archivo, "%s", buffer);  // Saltea la linea de "Ciudades"
-  fscanf(archivo, "%s", buffer);  // Comienzo a leer ciudades
+  int cantidadPalabras = 0, basura;
+  basura = fscanf(archivo, "%s", buffer);  // Saltea la linea de "Ciudades"
+  basura = fscanf(archivo, "%s", buffer);  // Comienzo a leer ciudades
   while (strcmp(buffer, "Costos")) {
     int largobuffer = strlen(buffer);
     if (largobuffer != 0) {
@@ -124,7 +124,7 @@ Ciudades lectura_archivo(char* archivoEntrada) {
       cola_encolar(nombresCiudades, copia_palabra(buffer));
       cantidadPalabras++;
     }
-    fscanf(archivo, "%s", buffer);
+    basura = fscanf(archivo, "%s", buffer);
   }
 
   Ciudades c = crea_ciudades(cantidadPalabras);
@@ -151,6 +151,7 @@ Ciudades lectura_archivo(char* archivoEntrada) {
   free(buffer);
   free(buffer2);
   fclose(archivo);
+  basura++;
   return c;
 }
 

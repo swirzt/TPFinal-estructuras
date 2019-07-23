@@ -1,5 +1,5 @@
 CC=gcc
-FLAGS=-std=c99 -pedantic -Wall
+FLAGS=-std=c99 -pedantic -Wall -O
 
 all: main check
 
