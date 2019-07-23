@@ -12,6 +12,7 @@ TSP (Travelling salesman problem).
 ## Estructura:
 
 La estructura usada en mi programa es de la forma:
+```
 **typedef struct _Ciudades {
   int cantidad;
   char** nombres;
@@ -19,6 +20,7 @@ La estructura usada en mi programa es de la forma:
   int costoViaje;
   int* movimientos;
 } * Ciudades;**
+```
 Ciudades es siempre un puntero porque nunca hago uso de la estructura localmente, sino que
 siempre prefiero utilizarla en memoria.
 Los miembros de la estructura son:
